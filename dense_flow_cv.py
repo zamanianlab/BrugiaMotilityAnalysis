@@ -76,13 +76,13 @@ def optical_flow(wd, vid):
         else:
             break
 
-    print("all_mag shape is: {}".format(all_mag.shape))
+    # print("all_mag shape is: {}".format(all_mag.shape))
     sum = np.sum(all_mag, axis=0)
     total_sum = np.sum(sum)
-    print("shape of sum is: {}".format(sum.shape))
-    print("total movement is: {}".format(total_sum))
-    print("the lowest movement value in sum is: {}".format(np.amin(sum)))
-    print("the maximum movement value in sum is: {}".format(np.amax(sum)))
+    # print("shape of sum is: {}".format(sum.shape))
+    # print("total movement is: {}".format(total_sum))
+    # print("the lowest movement value in sum is: {}".format(np.amin(sum)))
+    # print("the maximum movement value in sum is: {}".format(np.amax(sum)))
 
     filename = vid.stem + '_sum' + '.png'
     sum_png = wd.joinpath(filename)
@@ -184,7 +184,6 @@ if __name__ == "__main__":
     dir = args.directory
 
     wd = Path.home().joinpath('Desktop', 'temp_testing', dir)
-    print("Analyzing videos in {}.".format(wd))
     filename = str(dir) + '.csv'
     outfile = wd.joinpath(filename)
     with open(str(outfile), 'w') as of:
@@ -193,7 +192,6 @@ if __name__ == "__main__":
                          "Normalization.Factor", "Normalized.Motility"])
 
     for file in wd.rglob('*.avi'):
-        print("test")
         vid = wd.joinpath(file)
         vid_array, motility = optical_flow(wd, vid)
         normalization_factor = segment_worms(wd, vid_array)
