@@ -183,7 +183,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dir = args.directory
 
-    wd = Path.home().joinpath('Desktop', 'temp_testing', dir)
+    wd = Path.home().joinpath(dir)
     filename = str(dir) + '.csv'
     outfile = wd.joinpath(filename)
     with open(str(outfile), 'w') as of:
