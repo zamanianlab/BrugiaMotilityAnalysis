@@ -131,20 +131,24 @@ def segment_worms(wd, array):
     #         break
 
     # numpy equivalent to Fiji z-project max intensity
-    max_intensity = np.amax(array, axis=0)
+    # max_intensity = np.amax(array, axis=0)
+    med_intesity = np.median(array, axis=0)
 
     first_frame = array[0]
     print("Segmenting first frame...")
-    difference = abs(np.subtract(first_frame, max_intensity))
+    difference = abs(np.subtract(first_frame, med_intesity))
     blur = ndimage.filters.gaussian_filter(difference, 1.5)
     threshold = threshold_otsu(blur)
     binary = blur > threshold
     struct = ndimage.generate_binary_structure(2, 2)
     dilate = morphology.binary_dilation(binary, struct)
 
-    filename = vid.stem + '_max' + '.png'
-    max_png = wd.joinpath(filename)
-    imageio.imwrite(max_png, max_intensity)
+    # filename = vid.stem + '_max' + '.png'
+    # max_png = wd.joinpath(filename)
+    # imageio.imwrite(max_png, max_intensity)
+    filename = vid.stem + '_med' + '.png'
+    med_png = wd.joinpath(filename)
+    imageio.imwrite(med_png, med_intesity)
     filename = vid.stem + '_diff' + '.png'
     diff_png = wd.joinpath(filename)
     imageio.imwrite(diff_png, difference)
@@ -152,11 +156,11 @@ def segment_worms(wd, array):
     blur_png = wd.joinpath(filename)
     imageio.imwrite(blur_png, blur)
     filename = vid.stem + '_binary' + '.png'
-    binary_png = wd.joinpath(filename)
-    imageio.imwrite(binary_png, binary)
-    filename = vid.stem + '_segment' + '.png'
-    segment_png = wd.joinpath(filename)
-    imageio.imwrite(segment_png, dilate)
+    # binary_png = wd.joinpath(filename)
+    # imageio.imwrite(binary_png, binary)
+    # filename = vid.stem + '_segment' + '.png'
+    # segment_png = wd.joinpath(filename)
+    # imageio.imwrite(segment_png, dilate)
 
     print("Calculating normalization factor.")
     mass = np.sum(dilate)
@@ -184,10 +188,10 @@ if __name__ == "__main__":
     dir = args.directory
 
     wd = Path.home().joinpath(dir)
-    filename = str(dir) + '.csv'
-    outfile = wd.joinpath(filename)
+    outfile = wd.joinpath(str(dir) + wd.name + '.csv')
     with open(str(outfile), 'w') as of:
         writer = csv.writer(of, delimiter=',')
+        print("Writing output file to {}".format(of))
         writer.writerow(["Well", "Total.Motility",
                          "Normalization.Factor", "Normalized.Motility"])
 
