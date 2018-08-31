@@ -4,6 +4,7 @@ Scripts to analyze videos of moving worms
 ## Recommended conda environment:
 
 `conda create --name motility_analysis python=3.5`
+
 `source activate motility_analysis`
 
 ## Installing dependencies:
