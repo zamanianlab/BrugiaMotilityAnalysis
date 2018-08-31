@@ -159,7 +159,7 @@ def segment_worms(wd, array):
     imageio.imwrite(blur_png, blur)
     filename = vid.stem + '_binary' + '.png'
     binary_png = wd.joinpath(filename)
-    imageio.imwrite(binary_png, binary.astype(uint))
+    imageio.imwrite(binary_png, binary.astype(int))
     filename = vid.stem + '_segment' + '.png'
     segment_png = wd.joinpath(filename)
     imageio.imwrite(segment_png, dilate.astype(int))
