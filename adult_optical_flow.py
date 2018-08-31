@@ -18,7 +18,9 @@ def optical_flow(wd, vid):
     print("Starting optical flow analysis on {}.".format(vid))
 
     cap = cv2.VideoCapture(str(vid))
-    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # for testing on shorter videos
+    length = 10
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
