@@ -10,7 +10,9 @@ Scripts to analyze videos of moving worms
 ## Installing dependencies:
 
 `conda install numpy scipy pathlib scikit-image cython`
+
 `pip install datetime`
+
 `pip install opencv-python`
 
 ## Running the scripts:
