@@ -18,7 +18,8 @@ def optical_flow(wd, vid):
     print("Starting optical flow analysis on {}.".format(vid))
 
     cap = cv2.VideoCapture(str(vid))
-    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    length = 20
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -134,41 +135,59 @@ def segment_worms(wd, array):
     # max_intensity = np.amax(array, axis=0)
     med_intesity = np.median(array, axis=0)
 
-    # first_frame = array[0]
-    print("Segmenting fifth frame...")
-    # denoise
-    dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
-    difference = abs(np.subtract(dst, med_intesity))
-    blur = ndimage.filters.gaussian_filter(difference, 1.5)
-    threshold = threshold_otsu(blur)
-    binary = blur > threshold
-    struct = ndimage.generate_binary_structure(2, 2)
-    dilate = morphology.binary_dilation(binary, struct)
+    length = array.shape[0]
+    mass_list = []
+    count = 5
+    print("Segmenting and averaging every frame...")
+    while count < length - 5:
+        dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), count, 5, None,
+                                            4, 7, 21)
+        difference = abs(np.subtract(dst, med_intesity))
+        blur = ndimage.filters.gaussian_filter(difference, 1.5)
+        threshold = threshold_otsu(blur)
+        binary = blur > threshold
+        struct = ndimage.generate_binary_structure(2, 2)
+        dilate = morphology.binary_dilation(binary, struct)
+        frame_mass = np.sum(dilate)
+        mass_list.append(frame_mass)
+        count += 1
 
-    # filename = vid.stem + '_max' + '.png'
-    # max_png = wd.joinpath(filename)
-    # imageio.imwrite(max_png, max_intensity)
-    filename = vid.stem + '_dst' + '.png'
-    dst_png = wd.joinpath(filename)
-    imageio.imwrite(dst_png, dst)
-    filename = vid.stem + '_med' + '.png'
-    med_png = wd.joinpath(filename)
-    imageio.imwrite(med_png, med_intesity)
-    filename = vid.stem + '_diff' + '.png'
-    diff_png = wd.joinpath(filename)
-    imageio.imwrite(diff_png, difference)
-    filename = vid.stem + '_blur' + '.png'
-    blur_png = wd.joinpath(filename)
-    imageio.imwrite(blur_png, blur)
-    filename = vid.stem + '_binary' + '.png'
-    binary_png = wd.joinpath(filename)
-    imageio.imwrite(binary_png, binary.astype(int))
-    filename = vid.stem + '_segment' + '.png'
-    segment_png = wd.joinpath(filename)
-    imageio.imwrite(segment_png, dilate.astype(int))
+    # first_frame = array[0]
+    # print("Segmenting 5th frame...")
+    # denoise
+    # dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
+    # difference = abs(np.subtract(dst, med_intesity))
+    # blur = ndimage.filters.gaussian_filter(difference, 1.5)
+    # threshold = threshold_otsu(blur)
+    # binary = blur > threshold
+    # struct = ndimage.generate_binary_structure(2, 2)
+    # dilate = morphology.binary_dilation(binary, struct)
+
+    # # filename = vid.stem + '_max' + '.png'
+    # # max_png = wd.joinpath(filename)
+    # # imageio.imwrite(max_png, max_intensity)
+    # filename = vid.stem + '_dst' + '.png'
+    # dst_png = wd.joinpath(filename)
+    # imageio.imwrite(dst_png, dst)
+    # filename = vid.stem + '_med' + '.png'
+    # med_png = wd.joinpath(filename)
+    # imageio.imwrite(med_png, med_intesity)
+    # filename = vid.stem + '_diff' + '.png'
+    # diff_png = wd.joinpath(filename)
+    # imageio.imwrite(diff_png, difference)
+    # filename = vid.stem + '_blur' + '.png'
+    # blur_png = wd.joinpath(filename)
+    # imageio.imwrite(blur_png, blur)
+    # filename = vid.stem + '_binary' + '.png'
+    # binary_png = wd.joinpath(filename)
+    # imageio.imwrite(binary_png, binary.astype(int))
+    # filename = vid.stem + '_segment' + '.png'
+    # segment_png = wd.joinpath(filename)
+    # imageio.imwrite(segment_png, dilate.astype(int))
 
     print("Calculating normalization factor.")
-    mass = np.sum(dilate)
+    # mass = np.sum(dilate)
+    mass = sum(mass_list) / len(mass_list)
     print("Normalization factor calculation completed. Calculation took {}".
           format(datetime.now() - start_time))
 
