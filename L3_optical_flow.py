@@ -134,8 +134,7 @@ def segment_worms(wd, array):
     # max_intensity = np.amax(array, axis=0)
     med_intesity = np.median(array, axis=0)
 
-    # first_frame = array[0]
-    print("Segmenting fifth frame...")
+    print("Segmenting 5th frame...")
     # denoise
     dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
     difference = abs(np.subtract(dst, med_intesity))
@@ -148,9 +147,6 @@ def segment_worms(wd, array):
     # filename = vid.stem + '_max' + '.png'
     # max_png = wd.joinpath(filename)
     # imageio.imwrite(max_png, max_intensity)
-    filename = vid.stem + '_dst' + '.png'
-    dst_png = wd.joinpath(filename)
-    imageio.imwrite(dst_png, dst)
     filename = vid.stem + '_med' + '.png'
     med_png = wd.joinpath(filename)
     imageio.imwrite(med_png, med_intesity)
