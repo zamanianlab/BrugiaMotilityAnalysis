@@ -6,7 +6,7 @@ import imageio
 # import matplotlib.pyplot as plt
 # from skimage.filters import threshold_local
 from skimage.filters import threshold_otsu
-from skimage import morphology
+# from skimage import morphology
 from datetime import datetime
 import csv
 import argparse
@@ -19,8 +19,6 @@ def optical_flow(wd, vid):
 
     cap = cv2.VideoCapture(str(vid))
     length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # for testing on shorter videos
-    # length = 10
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -142,8 +140,6 @@ def segment_worms(wd, array):
     blur = ndimage.filters.gaussian_filter(difference, 1.5)
     threshold = threshold_otsu(blur)
     binary = blur > threshold
-    struct = ndimage.generate_binary_structure(2, 2)
-    dilate = morphology.binary_dilation(binary, struct)
 
     # filename = vid.stem + '_max' + '.png'
     # max_png = wd.joinpath(filename)
@@ -161,11 +157,9 @@ def segment_worms(wd, array):
     binary_png = wd.joinpath(filename)
     imageio.imwrite(binary_png, binary.astype(int))
     filename = vid.stem + '_segment' + '.png'
-    segment_png = wd.joinpath(filename)
-    imageio.imwrite(segment_png, dilate.astype(int))
 
     print("Calculating normalization factor.")
-    mass = np.sum(dilate)
+    mass = np.sum(binary)
     print("Normalization factor calculation completed. Calculation took {}".
           format(datetime.now() - start_time))
 
@@ -226,3 +220,4 @@ if __name__ == "__main__":
 # TODO: error control for improperly segmented videos
 
 # TODO: normalize only by first segmented frame, not by average across video
+# LOOKS LIKE THIS WAS DONE, NOT SURE WHEN
