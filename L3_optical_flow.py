@@ -141,8 +141,6 @@ def segment_worms(wd, array):
     blur = ndimage.filters.gaussian_filter(difference, 1.5)
     threshold = threshold_otsu(blur)
     binary = blur > threshold
-    struct = ndimage.generate_binary_structure(2, 2)
-    dilate = morphology.binary_dilation(binary, struct)
 
     # filename = vid.stem + '_max' + '.png'
     # max_png = wd.joinpath(filename)
@@ -159,12 +157,9 @@ def segment_worms(wd, array):
     filename = vid.stem + '_binary' + '.png'
     binary_png = wd.joinpath(filename)
     imageio.imwrite(binary_png, binary.astype(int))
-    filename = vid.stem + '_segment' + '.png'
-    segment_png = wd.joinpath(filename)
-    imageio.imwrite(segment_png, dilate.astype(int))
 
     print("Calculating normalization factor.")
-    mass = np.sum(dilate)
+    mass = np.sum(binary)
     print("Normalization factor calculation completed. Calculation took {}".
           format(datetime.now() - start_time))
 
@@ -195,7 +190,7 @@ if __name__ == "__main__":
         writer = csv.writer(of, delimiter=',')
         print("Writing output file to {}".format(of))
         writer.writerow(["Well", "Total.Motility",
-                         "Normalization.Factor", "Normalized.Motility"])
+                         "Worm.Area", "Normalized.Motility"])
 
     for file in wd.rglob('*.avi'):
         vid = wd.joinpath(file)

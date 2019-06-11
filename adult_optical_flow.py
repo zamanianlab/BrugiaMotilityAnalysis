@@ -156,7 +156,6 @@ def segment_worms(wd, array):
     filename = vid.stem + '_binary' + '.png'
     binary_png = wd.joinpath(filename)
     imageio.imwrite(binary_png, binary.astype(int))
-    filename = vid.stem + '_segment' + '.png'
 
     print("Calculating normalization factor.")
     mass = np.sum(binary)
@@ -190,7 +189,7 @@ if __name__ == "__main__":
         writer = csv.writer(of, delimiter=',')
         print("Writing output file to {}".format(of))
         writer.writerow(["Well", "Total.Motility",
-                         "Normalization.Factor", "Normalized.Motility"])
+                         "Worm.Area", "Normalized.Motility"])
 
     for file in wd.rglob('*.avi'):
         vid = wd.joinpath(file)
