@@ -184,7 +184,8 @@ if __name__ == "__main__":
     dir = args.directory
 
     wd = Path.home().joinpath(dir)
-    outfile = wd.joinpath(str(dir) + wd.name + '.csv')
+    print(wd.name)
+    outfile = wd.joinpath(str(dir) + '/' + wd.name + '.csv')
     with open(str(outfile), 'w') as of:
         writer = csv.writer(of, delimiter=',')
         print("Writing output file to {}".format(of))
