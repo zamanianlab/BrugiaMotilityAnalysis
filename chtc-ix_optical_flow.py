@@ -73,13 +73,13 @@ def organize_arrays(input, output, plate, frames, reorganize):
             matrix = np.array(image)
             well_array[counter] = matrix
 
-            if reorganize == True:
-               counter_str = str(counter).zfill(2)
-               dir = Path.home().joinpath(output)
-               name = Path.home().joinpath(input)
-               name = name.name.split("_")[0]
-               outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
-               cv2.imwrite(str(outpath), matrix)
+            if reorganize:
+                counter_str = str(counter).zfill(2)
+                dir = Path.home().joinpath(output)
+                name = Path.home().joinpath(input)
+                name = name.name.split("_")[0]
+                outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
+                cv2.imwrite(str(outpath), matrix)
 
             counter += 1
 
@@ -158,7 +158,7 @@ def dense_flow(well, array, input, output):
 
 if __name__ == "__main__":
 
-    # arguments
+
     parser = argparse.ArgumentParser(
         description='To be determined...')
 
@@ -191,9 +191,8 @@ if __name__ == "__main__":
     plate_format = args.rows * args.columns
     plate = create_plate(plate_format)
 
-    # plate = ["A01"]
-    # avi = organize_arrays(input_directory,
-    #                       output_directory,
-    #                       plate,
-    #                       time_points,
-    #                       reorganize)
+    avi = organize_arrays(args.input_directory,
+                          args.output_directory,
+                          plate,
+                          args.time_points,
+                          args.reorganize)
