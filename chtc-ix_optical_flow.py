@@ -82,22 +82,22 @@ def organize_arrays(input, output, plate, frames, reorganize):
                     outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
                     cv2.imwrite(str(outpath), matrix)
 
+            # run the flow algorithm on the well
+            dir = Path.home().joinpath(output)
+            name = Path.home().joinpath(input)
+            name = name.name.split("_")[0]
+            outpath = dir.joinpath(name + "_" + well + ".tiff")
+            # print(well_array[0].astype('uint16'))
+            # cv2.imwrite(str(outpath), well_array[0].astype('uint16'))
+            dense_flow(well, well_array, input, output)
+
+            # append each well's array to the plate's list
+            # plate_arrays.append(well_array)        
+
                     counter += 1
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
             counter += 1
-
-        # run the flow algorithm on the well
-        dir = Path.home().joinpath(output)
-        name = Path.home().joinpath(input)
-        name = name.name.split("_")[0]
-        outpath = dir.joinpath(name + "_" + well + ".tiff")
-        # print(well_array[0].astype('uint16'))
-        # cv2.imwrite(str(outpath), well_array[0].astype('uint16'))
-        dense_flow(well, well_array, input, output)
-
-        # append each well's array to the plate's list
-        # plate_arrays.append(well_array)
 
     return plate_arrays
 
