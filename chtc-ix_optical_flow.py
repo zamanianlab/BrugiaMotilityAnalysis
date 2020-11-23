@@ -5,13 +5,14 @@ import string
 import itertools
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 from pathlib import Path
-import struct
+# import struct
 import imageio
 from PIL import Image
-import sys
-import pathlib
+from skimage.filters import threshold_otsu
+# import sys
+# import pathlib
 from scipy import ndimage
 from datetime import datetime
 
@@ -89,18 +90,20 @@ def organize_arrays(input, output, plate, frames, reorganize):
             outpath = dir.joinpath(name + "_" + well + ".tiff")
             # print(well_array[0].astype('uint16'))
             # cv2.imwrite(str(outpath), well_array[0].astype('uint16'))
-            dense_flow(well, well_array, input, output)
+
+            vid_array, motility = dense_flow(well, well_array, input, output)
+            normalization_factor = segment_worms(output, well_array, well)
 
             # append each well's array to the plate's list
             # plate_arrays.append(well_array)
 
             counter += 1
-            
+
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
             counter += 1
 
-    return plate_arrays
+    return vid_array, motility, normalization_factor
 
 
 def dense_flow(well, array, input, output):
@@ -116,7 +119,6 @@ def dense_flow(well, array, input, output):
     all_mag = np.zeros((length - 1, height, width))
     count = 0
     frame1 = array[count]
-
 
     while(1):
         if count < length - 1:
@@ -161,6 +163,47 @@ def dense_flow(well, array, input, output):
     print(total_sum)
     return vid_array, total_sum
 
+
+def segment_worms(output, array, well):
+
+    start_time = datetime.now()
+    print("Starting normalization calculations for {}.".format(well))
+
+    # numpy equivalent to Fiji z-project max intensity
+    # max_intensity = np.amax(array, axis=0)
+    med_intesity = np.median(array, axis=0)
+
+    print("Segmenting 5th frame...")
+    # denoise
+    dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
+    difference = abs(np.subtract(dst, med_intesity))
+    blur = ndimage.filters.gaussian_filter(difference, 1.5)
+    threshold = threshold_otsu(blur)
+    binary = blur > threshold
+
+    # filename = well.stem + '_max' + '.png'
+    # max_png = output.joinpath(filename)
+    # imageio.imwrite(max_png, max_intensity)
+    filename = well.stem + '_med' + '.png'
+    med_png = output.joinpath(filename)
+    imageio.imwrite(med_png, med_intesity)
+    filename = well.stem + '_diff' + '.png'
+    diff_png = output.joinpath(filename)
+    imageio.imwrite(diff_png, difference)
+    filename = well.stem + '_blur' + '.png'
+    blur_png = output.joinpath(filename)
+    imageio.imwrite(blur_png, blur)
+    filename = well.stem + '_binary' + '.png'
+    binary_png = output.joinpath(filename)
+    imageio.imwrite(binary_png, binary.astype(int))
+
+    print("Calculating normalization factor.")
+    mass = np.sum(binary)
+    print("Normalization factor calculation completed. Calculation took {}".
+          format(datetime.now() - start_time))
+
+    return mass
+
 if __name__ == "__main__":
 
 
@@ -196,8 +239,9 @@ if __name__ == "__main__":
     plate_format = args.rows * args.columns
     plate = create_plate(plate_format)
 
-    avi = organize_arrays(args.input_directory,
-                          args.output_directory,
-                          plate,
-                          args.time_points,
-                          args.reorganize)
+    vid_array, motility, normalization_factor = organize_arrays(
+        args.input_directory,
+        args.output_directory,
+        plate,
+        args.time_points,
+        args.reorganize)
