@@ -61,26 +61,30 @@ def organize_arrays(input, output, plate, frames, reorganize):
         # final list of lists with wells and paths
         plate_paths.append(well_paths)
 
-        # get the dimensions of the images
-        first_frame = Image.open(str(well_paths[0]))
-        height, width = np.array(first_frame).shape
+        try:
+            # get the dimensions of the images
+            first_frame = Image.open(str(well_paths[0]))
+            height, width = np.array(first_frame).shape
 
-        well_array = np.zeros((frames, height, width))
-        counter = 0
-        print("Reading images for well {}".format(well))
-        for frame in well_paths:
-            image = Image.open(str(frame))
-            matrix = np.array(image)
-            well_array[counter] = matrix
+            well_array = np.zeros((frames, height, width))
+            counter = 0
+            print("Reading images for well {}".format(well))
+            for frame in well_paths:
+                image = Image.open(str(frame))
+                matrix = np.array(image)
+                well_array[counter] = matrix
 
-            if reorganize:
-                counter_str = str(counter).zfill(2)
-                dir = Path.home().joinpath(output)
-                name = Path.home().joinpath(input)
-                name = name.name.split("_")[0]
-                outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
-                cv2.imwrite(str(outpath), matrix)
+                if reorganize:
+                    counter_str = str(counter).zfill(2)
+                    dir = Path.home().joinpath(output)
+                    name = Path.home().joinpath(input)
+                    name = name.name.split("_")[0]
+                    outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
+                    cv2.imwrite(str(outpath), matrix)
 
+                    counter += 1
+        except FileNotFoundError:
+            print("Well {} not found. Moving to next well.".format(well))
             counter += 1
 
         # run the flow algorithm on the well
