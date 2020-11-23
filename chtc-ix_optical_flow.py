@@ -156,13 +156,11 @@ def dense_flow(well, array, input, output):
     print(total_sum)
     return vid_array, total_sum
 
-
-def getargs():
+if __name__ == "__main__":
 
     # arguments
     parser = argparse.ArgumentParser(
-        description='Modify TIFF stacks from the base ImageXpress export      \
-        strategy so that each well is stored in a single avi.')
+        description='To be determined...')
 
     # required arguments
     parser.add_argument('input_directory',
@@ -188,10 +186,7 @@ def getargs():
                         organized by well instead of time point (default is   \
                         to not reorganize).')
 
-
-if __name__ == "__main__":
-
-    args = getargs()
+    args = parser.parse_args()
 
     plate_format = args.rows * args.columns
     plate = create_plate(plate_format)
