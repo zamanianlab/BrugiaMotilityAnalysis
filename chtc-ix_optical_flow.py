@@ -172,9 +172,11 @@ def getargs():
     parser.add_argument('output_directory',
                         help='A path to the output directory.')
 
-    parser.add_argument('plate_format', type=int, choices=[6, 24, 96, 384],
-                        help='The format of the imaging plate (options = 6,   \
-                        24, 96, 384)')
+    parser.add_argument('rows', type=int,
+                        help='The number of rows in the imaging plate.')
+
+    parser.add_argument('columns', type=int,
+                        help='The number of columns in the imaging plate.')
 
     parser.add_argument('time_points', type=int,
                         help='The number of frames recorded.')
@@ -191,7 +193,7 @@ if __name__ == "__main__":
     args = getargs()
 
     # hydrogen testing
-    # plate_format = 96
+    plate_format = rows * columns
     plate = create_plate(plate_format)
 
     # plate = ["A01"]
