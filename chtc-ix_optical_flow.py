@@ -28,6 +28,7 @@ def create_plate(plate):
         columns = [str(column).zfill(2) for column in columns]
         wells = list(itertools.product(rows, columns))
         wells = [''.join(well) for well in wells]
+    print(wells)
 
     return wells
 
@@ -192,13 +193,12 @@ if __name__ == "__main__":
 
     args = getargs()
 
-    # hydrogen testing
-    plate_format = rows * columns
+    plate_format = args.rows * args.columns
     plate = create_plate(plate_format)
 
     # plate = ["A01"]
-    avi = organize_arrays(input_directory,
-                          output_directory,
-                          plate,
-                          time_points,
-                          reorganize)
+    # avi = organize_arrays(input_directory,
+    #                       output_directory,
+    #                       plate,
+    #                       time_points,
+    #                       reorganize)
