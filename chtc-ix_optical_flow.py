@@ -175,7 +175,7 @@ def segment_worms(output, array, well):
 
     print("Segmenting 5th frame...")
     # denoise
-    dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
+    dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 4, 5, None, 4, 7, 21)
     difference = abs(np.subtract(dst, med_intesity))
     blur = ndimage.filters.gaussian_filter(difference, 1.5)
     threshold = threshold_otsu(blur)
