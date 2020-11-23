@@ -92,9 +92,10 @@ def organize_arrays(input, output, plate, frames, reorganize):
             dense_flow(well, well_array, input, output)
 
             # append each well's array to the plate's list
-            # plate_arrays.append(well_array)        
+            # plate_arrays.append(well_array)
 
-                    counter += 1
+            counter += 1
+            
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
             counter += 1
