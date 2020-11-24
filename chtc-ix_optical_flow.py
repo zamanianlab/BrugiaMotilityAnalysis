@@ -34,18 +34,17 @@ def create_plate(plate):
     return wells
 
 
-def organize_arrays(input, output, plate, frames, reorganize):
+def organize_arrays(input, output, work_path, plate, frames, reorganize):
     '''
     Create a list of lists where each internal list is all the paths to all the
     images for a given well, and the entire list is the plate.
     '''
-    start_time = datetime.now()
+
+    # initialize a list that will contain the arrays/videos
+    vid_array = []
 
     # initialize a list that will contain lists of paths for each well
     plate_paths = []
-
-    # initialize list that will hold each well's array
-    plate_arrays = []
 
     for well in plate:
         print("Getting the paths for well {}".format(well))
@@ -67,6 +66,7 @@ def organize_arrays(input, output, plate, frames, reorganize):
             first_frame = Image.open(str(well_paths[0]))
             height, width = np.array(first_frame).shape
 
+            # empty array with the correct shape of the final video
             well_array = np.zeros((frames, height, width))
             counter = 0
             print("Reading images for well {}".format(well))
@@ -77,25 +77,13 @@ def organize_arrays(input, output, plate, frames, reorganize):
 
                 if reorganize:
                     counter_str = str(counter).zfill(2)
-                    dir = Path.home().joinpath(output)
+                    dir = Path.home().joinpath(work_path)
                     name = Path.home().joinpath(input)
                     name = name.name.split("_")[0]
                     outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
                     cv2.imwrite(str(outpath), matrix)
 
-            # run the flow algorithm on the well
-            dir = Path.home().joinpath(output)
-            name = Path.home().joinpath(input)
-            name = name.name.split("_")[0]
-            outpath = dir.joinpath(name + "_" + well + ".tiff")
-            # print(well_array[0].astype('uint16'))
-            # cv2.imwrite(str(outpath), well_array[0].astype('uint16'))
-
-            vid_array, motility = dense_flow(well, well_array, input, output)
-            normalization_factor = segment_worms(output, well_array, well)
-
-            # append each well's array to the plate's list
-            # plate_arrays.append(well_array)
+            vid_array.append(well_array)
 
             counter += 1
 
@@ -103,7 +91,7 @@ def organize_arrays(input, output, plate, frames, reorganize):
             print("Well {} not found. Moving to next well.".format(well))
             counter += 1
 
-    return vid_array, motility, normalization_factor
+    return vid_array
 
 
 def dense_flow(well, array, input, output):
@@ -174,9 +162,9 @@ def segment_worms(output, array, well):
     med_intesity = np.median(array, axis=0)
 
     print("Segmenting 5th frame...")
-    # denoise
-    dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
-    difference = abs(np.subtract(dst, med_intesity))
+    # denoise (I think erroring on subsampled data, will reincorporate later)
+    # dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
+    difference = abs(np.subtract(array, med_intesity))
     blur = ndimage.filters.gaussian_filter(difference, 1.5)
     threshold = threshold_otsu(blur)
     binary = blur > threshold
@@ -184,17 +172,17 @@ def segment_worms(output, array, well):
     # filename = well.stem + '_max' + '.png'
     # max_png = output.joinpath(filename)
     # imageio.imwrite(max_png, max_intensity)
-    filename = well.stem + '_med' + '.png'
-    med_png = output.joinpath(filename)
+    filename = well + '_med' + '.png'
+    med_png = Path.home.joinpath(filename)
     imageio.imwrite(med_png, med_intesity)
-    filename = well.stem + '_diff' + '.png'
-    diff_png = output.joinpath(filename)
+    filename = well + '_diff' + '.png'
+    diff_png = Path.home.joinpath(filename)
     imageio.imwrite(diff_png, difference)
-    filename = well.stem + '_blur' + '.png'
-    blur_png = output.joinpath(filename)
+    filename = well + '_blur' + '.png'
+    blur_png = Path.home.joinpath(filename)
     imageio.imwrite(blur_png, blur)
-    filename = well.stem + '_binary' + '.png'
-    binary_png = output.joinpath(filename)
+    filename = well + '_binary' + '.png'
+    binary_png = Path.home.joinpath(filename)
     imageio.imwrite(binary_png, binary.astype(int))
 
     print("Calculating normalization factor.")
@@ -219,6 +207,9 @@ if __name__ == "__main__":
     parser.add_argument('output_directory',
                         help='A path to the output directory.')
 
+    parser.add_argument('work_directory',
+                        help='A path to the work directory.')
+
     parser.add_argument('rows', type=int,
                         help='The number of rows in the imaging plate.')
 
@@ -236,12 +227,22 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # create the plate shape
     plate_format = args.rows * args.columns
+
+    # create a list of all the possible wells in the plate
     plate = create_plate(plate_format)
 
-    vid_array, motility, normalization_factor = organize_arrays(
+    # re-organize the input TIFFs so that each well has its own array
+    vid_array = organize_arrays(
         args.input_directory,
         args.output_directory,
+        args.work_directory,
         plate,
         args.time_points,
         args.reorganize)
+
+    print(vid_array.shape)
+
+    # vid_array, motility = dense_flow(well, well_array, input, output)
+    # normalization_factor = segment_worms(output, well_array, well)
