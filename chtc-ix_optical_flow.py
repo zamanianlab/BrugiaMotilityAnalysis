@@ -78,14 +78,15 @@ def organize_arrays(input, output, work_path, plate, frames, reorganize):
                 if reorganize:
                     counter_str = str(counter).zfill(2)
                     dir = Path.home().joinpath(work_path)
-                    name = Path.home().joinpath(input)
-                    name = name.name.split("_")[0]
-                    outpath = dir.joinpath(name + "_" + well + "_" + counter_str + ".tiff")
+                    plate_name = Path.home().joinpath(input)
+                    plate_name = plate_name.name.split("_")[0]
+                    dir.joinpath(well).mkdir(parents=True, exist_ok=True)
+                    outpath = dir.joinpath(well, plate_name + "_" + well + "_" + counter_str + ".tiff")
                     cv2.imwrite(str(outpath), matrix)
 
-            vid_array.append(well_array)
+                counter += 1
 
-            counter += 1
+            vid_array.append(well_array)
 
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
