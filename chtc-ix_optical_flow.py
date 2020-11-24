@@ -4,15 +4,16 @@ import argparse
 import string
 import itertools
 import cv2
+# import csv
 import numpy as np
-# from matplotlib import pyplot as plt
+import pandas as pd
 from pathlib import Path
-# import struct
+from collections import defaultdict
 import imageio
 from PIL import Image
 from skimage.filters import threshold_otsu
-# import sys
-# import pathlib
+from skimage.transform import rescale
+from skimage import filters
 from scipy import ndimage
 from datetime import datetime
 
@@ -40,8 +41,8 @@ def organize_arrays(input, output, work_path, plate, frames, reorganize):
     images for a given well, and the entire list is the plate.
     '''
 
-    # initialize a list that will contain the arrays/videos
-    vid_array = []
+    # initialize a dict that will contain the arrays/videos
+    vid_dict = {}
 
     # initialize a list that will contain lists of paths for each well
     plate_paths = []
@@ -86,124 +87,205 @@ def organize_arrays(input, output, work_path, plate, frames, reorganize):
 
                 counter += 1
 
-            vid_array.append(well_array)
+            # add to the dict with the well as the key and the arry as the value
+            vid_dict[well] = well_array
 
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
             counter += 1
 
-    return vid_array
+    return vid_dict
 
 
-def dense_flow(well, array, input, output):
+def dense_flow(vid_dict, input, output):
+    '''
+    Uses Farneback's algorithm to calculate optical flow for each well. To get
+    a single motility values, the magnitude of the flow is summed across each
+    frame, and then again for the entire array.
+    '''
 
-    start_time = datetime.now()
-    print("Starting optical flow analysis on {}.".format(well))
+    # initialize a dict that will contain the flow sums and one that will contain images
+    sum_dict = {}
+    flow_dict = {}
 
-    length, width, height = array.shape
+    for well in vid_dict:
+        start_time = datetime.now()
+        print("Starting optical flow analysis on {}.".format(well))
 
-    vid_array = np.zeros((length, height, width))
+        array = vid_dict[well]
 
-    # initialize emtpy array of video length minus one (or, the length of the dense flow output)
-    all_mag = np.zeros((length - 1, height, width))
-    count = 0
-    frame1 = array[count]
+        length, width, height = array.shape
 
-    while(1):
-        if count < length - 1:
-            frame1 = array[count].astype('uint16')
-            frame1 = frame1.astype('uint8')
-            # frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-            frame2 = array[count + 1].astype('uint16')
-            frame2 = frame2.astype('uint8')
-            # frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-            vid_array[count + 1] = frame2
+        # initialize emtpy array of video length minus one (or, the length of the dense flow output)
+        all_mag = np.zeros((length - 1, height, width))
+        count = 0
+        frame1 = array[count]
 
-            flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3,
-                                                15, 3, 5, 1.2, 0)
+        while(1):
+            if count < length - 1:
+                frame1 = array[count].astype('uint16')
+                frame1 = frame1.astype('uint8')
+                # frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+                frame2 = array[count + 1].astype('uint16')
+                frame2 = frame2.astype('uint8')
+                # frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
-            mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+                flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3,
+                                                    15, 3, 3, 1.2, 0)
 
-            # replace proper frame with the magnitude of the flow between prvs and next frames
-            all_mag[count] = mag
-            count += 1
+                mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
 
-        else:
-            break
+                # replace proper frame with the magnitude of the flow between prvs and next frames
+                all_mag[count] = mag
+                count += 1
 
-    sum = np.sum(all_mag, axis=0)
-    total_sum = np.sum(sum)
+            else:
+                break
 
-    # filename = well + '_sum' + '.png'
+        sum = np.sum(all_mag, axis=0)
+        total_sum = np.sum(sum)
+        sum_dict[well] = total_sum
+        flow_dict[well] = sum
+
+        # filename = well + '_sum' + '.png'
+        dir = Path.home().joinpath(output)
+        name = Path.home().joinpath(input)
+        name = name.name.split("_")[0]
+        outpath = dir.joinpath(name + "_" + well + '_flow' + ".tiff")
+
+        # write to png
+        # uint_sum = imageio.core.image_as_uint(sum)
+        # imageio.imwrite(outpath, sum)
+        print(str(outpath))
+        cv2.imwrite(str(outpath), sum.astype('uint16'))
+
+        print("Optical flow anlaysis completed. Analysis took {}".format(
+            datetime.now() - start_time))
+
+        print(total_sum)
+
+    return sum_dict, flow_dict
+
+
+def segment_worms(vid_dict, input, output):
+    '''
+    Segments worms to use for downstream normalization.
+    '''
+
+    # initialize a dict that will contain the flow sums
+    area_dict = {}
+
+    for well in vid_dict:
+        start_time = datetime.now()
+        print("Starting normalization calculation for {}.".format(well))
+
+        array = vid_dict[well]
+
+        print("Segmenting 5th frame...")
+
+        # sobel edge detection
+        sobel = filters.sobel(array[4])
+
+        # gaussian blur
+        blur = ndimage.filters.gaussian_filter(sobel, 1.5)
+
+        # set threshold, make binary
+        threshold = threshold_otsu(blur)
+        binary = blur > threshold
+
+        dir = Path.home().joinpath(output)
+        name = Path.home().joinpath(input)
+        name = name.name.split("_")[0]
+
+        sobel_png = dir.joinpath(name + "_" + well + '_edge' + ".png")
+        imageio.imwrite(sobel_png, sobel)
+
+        blur_png = dir.joinpath(name + "_" + well + '_blur' + ".png")
+        imageio.imwrite(blur_png, blur)
+
+        bin_png = dir.joinpath(name + "_" + well + '_bin' + ".png")
+        imageio.imwrite(bin_png, binary.astype(int))
+
+        print("Calculating normalization factor.")
+
+        # the area is the sum of all the white pixels (1.0)
+        area = np.sum(binary)
+        area_dict[well] = area
+        print("Normalization factor calculation completed. Calculation took {} \
+              seconds.".format(datetime.now() - start_time))
+
+    return area_dict
+
+
+def wrap_up(sum_dict, area_dict, input, output):
+    '''
+    Takes dictionaries of values and writes them to a CSV.
+    '''
+
+    # dicts = [sum_dict, area_dict]
+    final_dict = defaultdict(list)
+    for d in sum_dict, area_dict:
+        for key, value in d.items():
+            final_dict[key].append(value)
+
     dir = Path.home().joinpath(output)
     name = Path.home().joinpath(input)
     name = name.name.split("_")[0]
-    outpath = dir.joinpath(name + "_" + well + '_sum' + ".tiff")
+    outfile = dir.joinpath(name + '_data' + ".csv")
 
-    # write to png
-    # uint_sum = imageio.core.image_as_uint(sum)
-    # imageio.imwrite(outpath, sum)
-    print(str(outpath))
-    cv2.imwrite(str(outpath), sum.astype('uint16'))
-
-    print("Optical flow anlaysis completed. Analysis took {}".format(
-        datetime.now() - start_time))
-
-    print(total_sum)
-    return vid_array, total_sum
+    df = pd.DataFrame(final_dict).transpose()
+    df.index.name = 'well'
+    df.reset_index(inplace=True)
+    df.rename(columns={1: 'optical_flow', 2: 'worm_area'}).to_csv(outfile, index=False)
 
 
-def segment_worms(output, array, well):
+def thumbnails(dict, rows, cols, input, output):
+    '''
+    Takes a dict that contains a video, rescales into thumbnails, and pastes
+    into the structure of the plate.
+    '''
 
-    start_time = datetime.now()
-    print("Starting normalization calculations for {}.".format(well))
+    thumbs = {}
 
-    # numpy equivalent to Fiji z-project max intensity
-    # max_intensity = np.amax(array, axis=0)
-    med_intesity = np.median(array, axis=0)
+    for well, image in dict.items():
+        # rescale the imaging without anti-aliasing
+        rescaled = rescale(image, 0.125, anti_aliasing=True)
+        # normalize to 0-255
+        rescaled_norm = cv2.normalize(src=rescaled, dst=None, alpha=0,
+                                      beta=255, norm_type=cv2.NORM_MINMAX,
+                                      dtype=cv2.CV_8U)
+        thumbs[well] = rescaled_norm
 
-    print("Segmenting 5th frame...")
-    # denoise (I think erroring on subsampled data, will reincorporate later)
-    # dst = cv2.fastNlMeansDenoisingMulti(np.uint8(array), 5, 5, None, 4, 7, 21)
-    difference = abs(np.subtract(array, med_intesity))
-    blur = ndimage.filters.gaussian_filter(difference, 1.5)
-    threshold = threshold_otsu(blur)
-    binary = blur > threshold
+    # 0.125 of the 4X ImageXpress image is 256 x 256 pixels
+    height = rows * 256
+    width = cols * 256
 
-    # filename = well.stem + '_max' + '.png'
-    # max_png = output.joinpath(filename)
-    # imageio.imwrite(max_png, max_intensity)
-    filename = well + '_med' + '.png'
-    med_png = Path.home.joinpath(filename)
-    imageio.imwrite(med_png, med_intesity)
-    filename = well + '_diff' + '.png'
-    diff_png = Path.home.joinpath(filename)
-    imageio.imwrite(diff_png, difference)
-    filename = well + '_blur' + '.png'
-    blur_png = Path.home.joinpath(filename)
-    imageio.imwrite(blur_png, blur)
-    filename = well + '_binary' + '.png'
-    binary_png = Path.home.joinpath(filename)
-    imageio.imwrite(binary_png, binary.astype(int))
+    new_im = Image.new('L', (width, height))
 
-    print("Calculating normalization factor.")
-    mass = np.sum(binary)
-    print("Normalization factor calculation completed. Calculation took {}".
-          format(datetime.now() - start_time))
+    for well, thumb in thumbs.items():
+        # row letters can be converted to integers with ord() and subtracting a constant
+        row = int(ord(well[:1]) - 64)
+        col = int(well[1:].strip())
+        new_im.paste(Image.fromarray(thumb), ((row - 1) * 256, (col - 1) * 256))
 
-    return mass
+    dir = Path.home().joinpath(output)
+    name = Path.home().joinpath(input)
+    name = name.name.split("_")[0]
+    outfile = dir.joinpath(name + '_thumbs' + ".png")
+
+    new_im.save(outfile)
+
 
 if __name__ == "__main__":
-
 
     parser = argparse.ArgumentParser(
         description='To be determined...')
 
-    # required arguments
+    # required positional arguments
     parser.add_argument('input_directory',
                         help='A path to a directory containing subdirectories \
-                        filled with TIFF files (i.e. Plate_63/TimePoint_1,    \
-                        etc.)')
+                        filled with TIFF files (i.e. 20201118-p01-MZ_172/     \
+                        TimePoint_1, etc.)')
 
     parser.add_argument('output_directory',
                         help='A path to the output directory.')
@@ -220,6 +302,7 @@ if __name__ == "__main__":
     parser.add_argument('time_points', type=int,
                         help='The number of frames recorded.')
 
+    # optional flags
     parser.add_argument('--reorganize', dest='reorganize', action='store_true',
                         default=False,
                         help='Invoke if you want to save the TIFF files       \
@@ -235,7 +318,7 @@ if __name__ == "__main__":
     plate = create_plate(plate_format)
 
     # re-organize the input TIFFs so that each well has its own array
-    vid_array = organize_arrays(
+    vid_dict = organize_arrays(
         args.input_directory,
         args.output_directory,
         args.work_directory,
@@ -243,7 +326,25 @@ if __name__ == "__main__":
         args.time_points,
         args.reorganize)
 
-    print(vid_array.shape)
+    motility, flow_dict = dense_flow(
+        vid_dict,
+        args.input_directory,
+        args.output_directory)
 
-    # vid_array, motility = dense_flow(well, well_array, input, output)
-    # normalization_factor = segment_worms(output, well_array, well)
+    # normalization_factor = segment_worms(
+    #     vid_dict,
+    #     args.input_directory,
+    #     args.output_directory)
+
+    # wrap_up(
+    #     motility,
+    #     normalization_factor,
+    #     args.input_directory,
+    #     args.output_directory)
+
+    thumbnails(
+        flow_dict,
+        args.rows,
+        args.columns,
+        args.input_directory,
+        args.output_directory)
