@@ -331,16 +331,16 @@ if __name__ == "__main__":
         args.input_directory,
         args.output_directory)
 
-    # normalization_factor = segment_worms(
-    #     vid_dict,
-    #     args.input_directory,
-    #     args.output_directory)
+    normalization_factor = segment_worms(
+        vid_dict,
+        args.input_directory,
+        args.output_directory)
 
-    # wrap_up(
-    #     motility,
-    #     normalization_factor,
-    #     args.input_directory,
-    #     args.output_directory)
+    wrap_up(
+        motility,
+        normalization_factor,
+        args.input_directory,
+        args.output_directory)
 
     thumbnails(
         flow_dict,
