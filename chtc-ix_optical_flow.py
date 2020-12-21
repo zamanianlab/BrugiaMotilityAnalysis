@@ -270,7 +270,8 @@ def thumbnails(dict, rows, cols, input, output):
         # row letters can be converted to integers with ord() and subtracting a constant
         row = int(ord(well[:1]) - 64)
         col = int(well[1:].strip())
-        new_im.paste(Image.fromarray(thumb), ((row - 1) * 256, (col - 1) * 256))
+        # print(well, row, col)
+        new_im.paste(Image.fromarray(thumb), ((col - 1) * 256, (row - 1) * 256))
 
     dir = Path.home().joinpath(output)
     name = Path.home().joinpath(input)
@@ -335,16 +336,16 @@ if __name__ == "__main__":
         args.input_directory,
         args.output_directory)
 
-    normalization_factor = segment_worms(
-        vid_dict,
-        args.input_directory,
-        args.output_directory)
+    # normalization_factor = segment_worms(
+    #     vid_dict,
+    #     args.input_directory,
+    #     args.output_directory)
 
-    wrap_up(
-        motility,
-        normalization_factor,
-        args.input_directory,
-        args.output_directory)
+    # wrap_up(
+    #     motility,
+    #     normalization_factor,
+    #     args.input_directory,
+    #     args.output_directory)
 
     thumbnails(
         flow_dict,
