@@ -87,8 +87,16 @@ def organize_arrays(input, output, work_path, plate, frames, reorganize):
 
                 counter += 1
 
-            # add to the dict with the well as the key and the arry as the value
+            # add to the dict with the well as the key and the array as the value
             vid_dict[well] = well_array
+
+            # saving as 16 bit AVI not currently working
+            # fourcc = cv2.VideoWriter_fourcc(*'FFV1')
+            # outvid = dir.joinpath(well, plate_name + "_" + well + ".avi")
+            # out = cv2.VideoWriter(str(outvid), fourcc, 4, (height,  width), False)
+            # for frame in well_array:
+            #     frame = frame.astype('uint8')
+            #     out.write(frame)
 
         except FileNotFoundError:
             print("Well {} not found. Moving to next well.".format(well))
@@ -124,16 +132,14 @@ def dense_flow(vid_dict, input, output):
         while(1):
             if count < length - 1:
                 frame1 = array[count].astype('uint16')
-                frame1 = frame1.astype('uint8')
-                # frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
                 frame2 = array[count + 1].astype('uint16')
-                frame2 = frame2.astype('uint8')
-                # frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
                 flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3,
-                                                    15, 3, 3, 1.2, 0)
+                                                    15, 3, 5, 1.2, 0)
 
                 mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+
+                frame1 = frame2
 
                 # replace proper frame with the magnitude of the flow between prvs and next frames
                 all_mag[count] = mag
@@ -154,8 +160,6 @@ def dense_flow(vid_dict, input, output):
         outpath = dir.joinpath(name + "_" + well + '_flow' + ".tiff")
 
         # write to png
-        # uint_sum = imageio.core.image_as_uint(sum)
-        # imageio.imwrite(outpath, sum)
         print(str(outpath))
         cv2.imwrite(str(outpath), sum.astype('uint16'))
 
@@ -236,7 +240,7 @@ def wrap_up(sum_dict, area_dict, input, output):
     df = pd.DataFrame(final_dict).transpose()
     df.index.name = 'well'
     df.reset_index(inplace=True)
-    df.rename(columns={1: 'optical_flow', 2: 'worm_area'}).to_csv(outfile, index=False)
+    df.rename(columns={0: 'optical_flow', 1: 'worm_area'}).to_csv(outfile, index=False)
 
 
 def thumbnails(dict, rows, cols, input, output):
