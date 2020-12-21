@@ -1,16 +1,11 @@
-#!/Users/njwheeler/software/miniconda3/bin/python
-
 import argparse
 import string
 import itertools
 import cv2
-# import csv
 import numpy as np
 import csv
 import glob
-# import pandas as pd
 from pathlib import Path
-# from collections import defaultdict
 import imageio
 from PIL import Image
 from skimage.filters import threshold_otsu
