@@ -1,0 +1,21 @@
+// splitPlate.txt
+// Last updated: August 15 2019
+
+outputDirectory = getDirectory("Choose output directory");
+
+title = "start"
+
+while (title != "") {
+
+	waitForUser("Please make your selection and click OK...");
+
+	title = getString("Please provide the well ID...", "");
+
+	// duplicate the ROI, remove outside, and save as AVI in the provided outputDirectory
+	run("Duplicate...", "title=[title].avi duplicate");
+	setBackgroundColor(0, 0, 0);
+	run("Clear Outside", "stack");
+	saveFile = outputDirectory + title + ".avi";
+	run("AVI... ", "compression=None frame=30 save=[" + saveFile + "]");
+	close();
+} 
